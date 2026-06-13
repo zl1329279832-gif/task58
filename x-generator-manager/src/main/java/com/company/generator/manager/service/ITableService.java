@@ -2,6 +2,8 @@ package com.company.generator.manager.service;
 
 import com.company.generator.manager.common.data.DbTableInfo;
 import com.company.generator.manager.common.exception.GenerationException;
+import com.company.generator.manager.entity.DryRunRequest;
+import com.company.generator.manager.entity.DryRunResult;
 import com.company.generator.manager.entity.Scheme;
 import com.company.generator.manager.entity.Table;
 import com.company.generator.manager.entity.Template;
@@ -53,4 +55,14 @@ public interface ITableService extends ICommonService<Table> {
     public void removeById(Serializable id);
 
     public List<Table> findSubTable(String tablename);
+
+    /**
+     * 生成方案预检（dry-run），不写入文件，返回预览结果
+     */
+    DryRunResult dryRun(DryRunRequest request) throws IOException, GenerationException;
+
+    /**
+     * 确认生成：根据预检结果写入文件
+     */
+    void generateConfirmed(String dryRunId) throws IOException, GenerationException;
 }

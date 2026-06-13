@@ -2,6 +2,7 @@ package com.company.generator.manager.controller;
 
 import com.company.generator.manager.common.data.DbTableInfo;
 import com.company.generator.manager.common.definition.DefinitionUtils;
+import com.company.generator.manager.common.exception.GenerationException;
 import com.company.generator.manager.entity.*;
 import com.company.generator.manager.service.*;
 import com.alibaba.fastjson.JSON;
@@ -349,5 +350,45 @@ public class TableController extends BaseBeanController<Table> {
             return Response.error("移除失败");
         }
         return  Response.ok("移除成功");
+    }
+
+    @PostMapping(value = "dryRun")
+    public Response dryRun(@RequestBody DryRunRequest request) {
+        if (request.getTableId() == null || request.getTableId().isEmpty()) {
+            return Response.error("请选择表");
+        }
+        if (request.getTemplateSchemeId() == null || request.getTemplateSchemeId().isEmpty()) {
+            return Response.error("请选择模板方案");
+        }
+        if (request.getTemplateKeys() == null || request.getTemplateKeys().isEmpty()) {
+            return Response.error("请选择要预检的模板");
+        }
+        try {
+            DryRunResult result = tableService.dryRun(request);
+            Response response = Response.ok("预检完成");
+            response.putObject(result);
+            return response;
+        } catch (GenerationException e) {
+            return Response.error("预检失败: " + e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Response.error("预检失败: " + e.getMessage());
+        }
+    }
+
+    @PostMapping(value = "generateConfirmed")
+    public Response generateConfirmed(@RequestParam("dryRunId") String dryRunId) {
+        if (dryRunId == null || dryRunId.isEmpty()) {
+            return Response.error("预检ID不能为空");
+        }
+        try {
+            tableService.generateConfirmed(dryRunId);
+            return Response.ok("代码生成成功");
+        } catch (GenerationException e) {
+            return Response.error("生成失败: " + e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Response.error("生成失败: " + e.getMessage());
+        }
     }
 }
