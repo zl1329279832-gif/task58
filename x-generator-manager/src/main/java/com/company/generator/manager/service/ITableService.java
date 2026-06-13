@@ -8,11 +8,28 @@ import com.company.generator.manager.entity.Template;
 import com.company.manerger.sys.common.mybatis.service.ICommonService;
 import freemarker.template.TemplateException;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 
 public interface ITableService extends ICommonService<Table> {
+
+    /**
+     * 解析输出文件路径（不创建目录、不删除文件）
+     */
+    public File resolveOutPath(Scheme scheme, Template template);
+
+    /**
+     * 构建FreeMarker模板数据模型
+     */
+    public Map<String, Object> getFtlMap(Scheme scheme, Template template, List<Template> allTemplates);
+
+    /**
+     * 渲染FreeMarker模板
+     */
+    public String parseTemplate(Map<String, Object> rootMap, String content) throws TemplateException, IOException;
 
     /**
      * 获得表列表

@@ -219,6 +219,7 @@ public class TableServiceImpl extends CommonServiceImpl<TableMapper, Table> impl
 	}
 
 
+	@Override
 	public Map<String, Object> getFtlMap(Scheme scheme, Template template, List<Template> allTemplates) {
 		Map<String, Object> dataMap = new HashMap<String, Object>();
 		//文件导入的以后再处理
@@ -269,39 +270,32 @@ public class TableServiceImpl extends CommonServiceImpl<TableMapper, Table> impl
 		return packageName;
 	}
 
-	protected File getOutPath(Scheme scheme, Template template) {
-		String outPath=template.getTargetPath();
+	@Override
+	public File resolveOutPath(Scheme scheme, Template template) {
+		String outPath = template.getTargetPath();
 		String packageNamePath = "";
-		// 默认生成的包名
 		String packageName = template.getTargetPackage();
-		//包名字中加入模板
-		packageName = parsePackageName(packageName,scheme.getModuleName());
-		if (template.getEnablePackage().equals("1")){
-			if (!"".endsWith(packageName)) {
-//				outPath += File.separator + packageName;
+		packageName = parsePackageName(packageName, scheme.getModuleName());
+		if (template.getEnablePackage() != null && template.getEnablePackage().equals("1")) {
+			if (!"".equals(packageName)) {
 				packageNamePath = packageName;
 			}
 		}
-		/*// 当前模块名
-		String moduleName = scheme.getModuleName();
-		if (!"".endsWith(moduleName)) {
-			outPath += File.separator + moduleName;
-		}*/
-		//
-//		outPath = outPath.replace(".", File.separator).trim();
 		packageNamePath = packageNamePath.replace(".", File.separator).trim();
 		outPath += File.separator + packageNamePath;
-		File outPathFile = new File(outPath);
-		if (!outPathFile.exists()) {
-			outPathFile.mkdirs();
-		}
-		//对文件进行格式化
 		String fileName = template.getNameFormat().replace("[entityName]", scheme.getEntityName());
-		if (StringUtils.isEmpty(template.getNameUnderline())&&template.getNameUnderline().equals("1")) {
+		if (!StringUtils.isEmpty(template.getNameUnderline()) && template.getNameUnderline().equals("1")) {
 			fileName = StringUtils.camelToUnderline(fileName);
 		}
+		return new File(outPath + File.separator + fileName);
+	}
 
-		File outFile = new File(outPath + File.separator+ fileName);
+	protected File getOutPath(Scheme scheme, Template template) {
+		File outFile = resolveOutPath(scheme, template);
+		File parentDir = outFile.getParentFile();
+		if (parentDir != null && !parentDir.exists()) {
+			parentDir.mkdirs();
+		}
 		if (outFile.exists()) {
 			outFile.delete();
 		}
@@ -316,7 +310,8 @@ public class TableServiceImpl extends CommonServiceImpl<TableMapper, Table> impl
 	 * @throws TemplateException
 	 * @throws IOException
 	 */
-	private String parseTemplate(Map<String, Object> rootMap, String content) throws TemplateException, IOException {
+	@Override
+	public String parseTemplate(Map<String, Object> rootMap, String content) throws TemplateException, IOException {
 		content=StringEscapeUtils.unescapeHtml4(content);
 		String tempname = StringUtils.hashKeyForDisk(content);
 		Configuration configuration = new Configuration();
