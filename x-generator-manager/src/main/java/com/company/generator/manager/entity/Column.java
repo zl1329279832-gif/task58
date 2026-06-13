@@ -11,6 +11,10 @@ import com.baomidou.mybatisplus.enums.IdType;
 import com.company.manerger.sys.common.base.mvc.entity.AbstractEntity;
 import com.company.manerger.sys.common.utils.StringUtils;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
 @TableName("generator_column")
 public class Column extends AbstractEntity<String> implements java.io.Serializable {
 
@@ -116,11 +120,48 @@ public class Column extends AbstractEntity<String> implements java.io.Serializab
 	@TableField(exist = false)
 	private Boolean isBaseType = Boolean.FALSE;
 	@TableField(exist = false)
-	private String[] baseTypes = { "String", "Double", "Text", "Date", "Blob", "Short", "Integer", "Boolean" };
+	private String[] baseTypes = { "String", "Double", "Text", "Date", "Blob", "Short", "Integer", "Boolean", "BigDecimal", "Float", "Long" };
 	@TableField(exist = false)
 	private String simpleJavaType;
 	@TableField(exist = false)
 	private String dbType;
+	@TableField(exist = false)
+	private Boolean autoIncrement = Boolean.FALSE;
+
+	/** MySQL/SQL reserved keywords that require backtick escaping */
+	@TableField(exist = false)
+	private static final Set<String> SQL_KEYWORDS = new HashSet<>(Arrays.asList(
+		"ADD", "ALL", "ALTER", "ANALYZE", "AND", "AS", "ASC", "BETWEEN", "BIGINT", "BINARY",
+		"BLOB", "BOTH", "BY", "CALL", "CASCADE", "CASE", "CHANGE", "CHAR", "CHARACTER", "CHECK",
+		"COLLATE", "COLUMN", "CONDITION", "CONSTRAINT", "CONTINUE", "CONVERT", "CREATE", "CROSS",
+		"CURRENT_DATE", "CURRENT_TIME", "CURRENT_TIMESTAMP", "CURRENT_USER", "CURSOR", "DATABASE",
+		"DATABASES", "DAY_HOUR", "DAY_MICROSECOND", "DAY_MINUTE", "DAY_SECOND", "DEC", "DECIMAL",
+		"DECLARE", "DEFAULT", "DELAYED", "DELETE", "DESC", "DESCRIBE", "DETERMINISTIC", "DISTINCT",
+		"DISTINCTROW", "DIV", "DOUBLE", "DROP", "DUAL", "EACH", "ELSE", "ELSEIF", "ENCLOSED",
+		"ESCAPED", "EXISTS", "EXIT", "EXPLAIN", "FALSE", "FETCH", "FLOAT", "FLOAT4", "FLOAT8",
+		"FOR", "FORCE", "FOREIGN", "FROM", "FULLTEXT", "GRANT", "GROUP", "HAVING", "HIGH_PRIORITY",
+		"HOUR_MICROSECOND", "HOUR_MINUTE", "HOUR_SECOND", "IF", "IGNORE", "IN", "INDEX", "INFILE",
+		"INNER", "INOUT", "INSENSITIVE", "INSERT", "INT", "INT1", "INT2", "INT3", "INT4", "INT8",
+		"INTEGER", "INTERVAL", "INTO", "IS", "ITERATE", "JOIN", "KEY", "KEYS", "KILL", "LEADING",
+		"LEAVE", "LEFT", "LIKE", "LIMIT", "LINEAR", "LINES", "LOAD", "LOCALTIME", "LOCALTIMESTAMP",
+		"LOCK", "LONG", "LONGBLOB", "LONGTEXT", "LOOP", "LOW_PRIORITY", "MATCH", "MEDIUMBLOB",
+		"MEDIUMINT", "MEDIUMTEXT", "MIDDLEINT", "MINUTE_MICROSECOND", "MINUTE_SECOND", "MOD",
+		"MODIFIES", "NATURAL", "NOT", "NO_WRITE_TO_BINLOG", "NULL", "NUMERIC", "ON", "OPTIMIZE",
+		"OPTION", "OPTIONALLY", "OR", "ORDER", "OUT", "OUTER", "OUTFILE", "PRECISION", "PRIMARY",
+		"PROCEDURE", "PURGE", "RANGE", "READ", "READS", "REAL", "REFERENCES", "REGEXP", "RELEASE",
+		"RENAME", "REPEAT", "REPLACE", "REQUIRE", "RESTRICT", "RETURN", "REVOKE", "RIGHT", "RLIKE",
+		"SCHEMA", "SCHEMAS", "SECOND_MICROSECOND", "SELECT", "SENSITIVE", "SEPARATOR", "SET",
+		"SHOW", "SMALLINT", "SPATIAL", "SPECIFIC", "SQL", "SQLEXCEPTION", "SQLSTATE", "SQLWARNING",
+		"SQL_BIG_RESULT", "SQL_CALC_FOUND_ROWS", "SQL_SMALL_RESULT", "SSL", "STARTING", "STATUS",
+		"STRAIGHT_JOIN", "TABLE", "TERMINATED", "THEN", "TINYBLOB", "TINYINT", "TINYTEXT", "TO",
+		"TRAILING", "TRIGGER", "TRUE", "UNDO", "UNION", "UNIQUE", "UNLOCK", "UNSIGNED", "UPDATE",
+		"USAGE", "USE", "USING", "UTC_DATE", "UTC_TIME", "UTC_TIMESTAMP", "VALUE", "VALUES",
+		"VARBINARY", "VARCHAR", "VARCHARACTER", "VARYING", "WHEN", "WHERE", "WHILE", "WITH",
+		"WRITE", "XOR", "YEAR_MONTH", "ZEROFILL",
+		"RANK", "DENSE_RANK", "ROW_NUMBER", "ROWS", "WINDOW", "OVER", "PARTITION",
+		"GROUPS", "JSON_TABLE", "LAG", "LEAD", "FIRST_VALUE", "LAST_VALUE", "NTH_VALUE",
+		"NTILE", "CUME_DIST", "PERCENT_RANK", "RECURSIVE", "OF", "SYSTEM", "LATERAL"
+	));
 
 	public Column() {
 
@@ -129,7 +170,7 @@ public class Column extends AbstractEntity<String> implements java.io.Serializab
 	public Column(DbColumnInfo dbColumnInfo, String dbType) {
 		this.columnName = dbColumnInfo.getColumnName().toLowerCase();
 		this.remarks = dbColumnInfo.getRemarks();
-		this.typeName = dbColumnInfo.getTypeName().toLowerCase();
+		this.typeName = dbColumnInfo.getTypeName().toUpperCase();
 		if (StringUtils.isEmpty(dbColumnInfo.getColumnSize())) {
 			this.columnSize = "1";
 		} else {
@@ -141,7 +182,10 @@ public class Column extends AbstractEntity<String> implements java.io.Serializab
 		this.columnDef = dbColumnInfo.getColumnDef();
 		this.decimalDigits = StringUtils.isEmpty(dbColumnInfo.getDecimalDigits()) ? "0"
 				: dbColumnInfo.getDecimalDigits();
-		Type type = DbTypeConvert.getTypeConvert(DbTypeConvert.TYPE_DB_TO_JAVA,dbType).getType(dbColumnInfo.getTypeName());
+		this.autoIncrement = dbColumnInfo.isAutoIncrement();
+		// 使用大写typeName进行类型查找
+		String upperTypeName = dbColumnInfo.getTypeName().toUpperCase();
+		Type type = DbTypeConvert.getTypeConvert(DbTypeConvert.TYPE_DB_TO_JAVA,dbType).getType(upperTypeName);
 		if (type != null) {
 			this.javaType = type.getJavaType();
 		} else {
@@ -153,7 +197,6 @@ public class Column extends AbstractEntity<String> implements java.io.Serializab
 		this.queryType = "eq";
 		this.formable = Boolean.TRUE;
 		this.formType = "input";
-		this.typeName = dbColumnInfo.getTypeName().toUpperCase();
 	}
 
 	public String getId() {
@@ -457,5 +500,30 @@ public class Column extends AbstractEntity<String> implements java.io.Serializab
 
 	public Boolean getBaseType() {
 		return Boolean.FALSE;
+	}
+
+	public Boolean getAutoIncrement() {
+		return autoIncrement;
+	}
+
+	public void setAutoIncrement(Boolean autoIncrement) {
+		this.autoIncrement = autoIncrement;
+	}
+
+	/**
+	 * 返回反引号转义的列名（当列名是SQL关键字时需要转义）
+	 */
+	public String getEscapedColumnName() {
+		if (columnName != null && SQL_KEYWORDS.contains(columnName.toUpperCase())) {
+			return "`" + columnName + "`";
+		}
+		return columnName;
+	}
+
+	/**
+	 * 判断列名是否为SQL保留关键字
+	 */
+	public Boolean getIsKeyword() {
+		return columnName != null && SQL_KEYWORDS.contains(columnName.toUpperCase());
 	}
 }

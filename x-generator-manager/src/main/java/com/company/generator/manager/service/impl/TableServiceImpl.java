@@ -309,7 +309,7 @@ public class TableServiceImpl extends CommonServiceImpl<TableMapper, Table> impl
 		}
 		//对文件进行格式化
 		String fileName = template.getNameFormat().replace("[entityName]", scheme.getEntityName());
-		if (StringUtils.isEmpty(template.getNameUnderline())&&template.getNameUnderline().equals("1")) {
+		if (!StringUtils.isEmpty(template.getNameUnderline())&&template.getNameUnderline().equals("1")) {
 			fileName = StringUtils.camelToUnderline(fileName);
 		}
 

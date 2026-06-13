@@ -95,15 +95,20 @@
 			<db-type>INT UNSIGNED</db-type>
 		</type>
 		<type>
+			<java-type>Integer</java-type>
+			<db-type>INTEGER</db-type>
+		</type>
+		<type>
 			<java-type>Long</java-type>
 			<db-type>BIGINT UNSIGNED</db-type>
 		</type>
 		<type>
-			<java-type>Long</java-type>
+			<java-type>Integer</java-type>
 			<db-type>TINYINT UNSIGNED</db-type>
 		</type>
 		<type>
-			<java-type>Double</java-type>
+			<java-type>BigDecimal</java-type>
+			<full-type>java.math.BigDecimal</full-type>
 			<db-type>DECIMAL</db-type>
 		</type>
 		<type>
@@ -116,11 +121,12 @@
 			<db-type>TIMESTAMP</db-type>
 		</type>
 		<type>
-			<java-type>Short</java-type>
+			<java-type>Integer</java-type>
 			<db-type>TINYINT</db-type>
 		</type>
 		<type>
-			<java-type>Double</java-type>
+			<java-type>BigDecimal</java-type>
+			<full-type>java.math.BigDecimal</full-type>
 			<db-type>DECIMAL UNSIGNED</db-type>
 		</type>
 		<type>
@@ -128,12 +134,95 @@
 			<db-type>SMALLINT</db-type>
 		</type>
 		<type>
-			<java-type>Short</java-type>
+			<java-type>Boolean</java-type>
 			<db-type>BIT</db-type>
 		</type>
 		<type>
 			<java-type>String</java-type>
 			<db-type>CHAR</db-type>
+		</type>
+		<type>
+			<java-type>Double</java-type>
+			<db-type>DOUBLE</db-type>
+		</type>
+		<type>
+			<java-type>Float</java-type>
+			<db-type>FLOAT</db-type>
+		</type>
+		<type>
+			<java-type>Date</java-type>
+			<full-type>java.util.Date</full-type>
+			<db-type>DATE</db-type>
+		</type>
+		<type>
+			<java-type>Date</java-type>
+			<full-type>java.util.Date</full-type>
+			<db-type>TIME</db-type>
+		</type>
+		<type>
+			<java-type>Date</java-type>
+			<full-type>java.util.Date</full-type>
+			<db-type>YEAR</db-type>
+		</type>
+		<type>
+			<java-type>Integer</java-type>
+			<db-type>MEDIUMINT</db-type>
+		</type>
+		<type>
+			<java-type>Integer</java-type>
+			<db-type>SMALLINT UNSIGNED</db-type>
+		</type>
+		<type>
+			<java-type>Long</java-type>
+			<db-type>MEDIUMINT UNSIGNED</db-type>
+		</type>
+		<type>
+			<java-type>Boolean</java-type>
+			<db-type>BOOLEAN</db-type>
+		</type>
+		<type>
+			<java-type>String</java-type>
+			<db-type>TINYTEXT</db-type>
+		</type>
+		<type>
+			<java-type>String</java-type>
+			<db-type>MEDIUMTEXT</db-type>
+		</type>
+		<type>
+			<java-type>String</java-type>
+			<db-type>LONGTEXT</db-type>
+		</type>
+		<type>
+			<java-type>byte[]</java-type>
+			<db-type>BINARY</db-type>
+		</type>
+		<type>
+			<java-type>byte[]</java-type>
+			<db-type>VARBINARY</db-type>
+		</type>
+		<type>
+			<java-type>byte[]</java-type>
+			<db-type>TINYBLOB</db-type>
+		</type>
+		<type>
+			<java-type>byte[]</java-type>
+			<db-type>BLOB</db-type>
+		</type>
+		<type>
+			<java-type>byte[]</java-type>
+			<db-type>MEDIUMBLOB</db-type>
+		</type>
+		<type>
+			<java-type>byte[]</java-type>
+			<db-type>LONGBLOB</db-type>
+		</type>
+		<type>
+			<java-type>Double</java-type>
+			<db-type>DOUBLE UNSIGNED</db-type>
+		</type>
+		<type>
+			<java-type>Float</java-type>
+			<db-type>FLOAT UNSIGNED</db-type>
 		</type>
 	</dbtojava-types>
 	<!-- java类型与class全路径的对应 -->
@@ -141,6 +230,10 @@
 		 <type>
 			<java-type>Date</java-type>
 			<full-type>java.util.Date</full-type>
+		</type>
+		<type>
+			<java-type>BigDecimal</java-type>
+			<full-type>java.math.BigDecimal</full-type>
 		</type>
 	</typetofull-types>
 </definition>

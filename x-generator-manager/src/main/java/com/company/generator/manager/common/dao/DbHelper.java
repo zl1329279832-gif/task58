@@ -46,6 +46,9 @@ public class DbHelper implements IDbHelper {
             if (driverName.contains("ORACLE")) {
                 resultSet = connection.getMetaData().getTables(null, dbName.toUpperCase(),
                         null, types);
+            } else if (driverName.contains("MYSQL")) {
+                // MySQL使用catalog来限定数据库范围
+                resultSet = connection.getMetaData().getTables(dbName, null, null, types);
             } else {
                 resultSet = connection.getMetaData().getTables(null, null, null, types);
             }
@@ -53,10 +56,7 @@ public class DbHelper implements IDbHelper {
                 String tableName = resultSet.getString("TABLE_NAME");
                 String remarks = resultSet.getString("REMARKS");
                 if (StringUtils.isEmpty(remarks)) {
-
-                    if (driverName.contains("MySQL")) {
-
-                    }
+                    remarks = "";
                 }
                 DbTableInfo dbTableInfo = new DbTableInfo();
                 dbTableInfo.setTableName(tableName);
@@ -94,8 +94,14 @@ public class DbHelper implements IDbHelper {
             connection.setAutoCommit(true);
             // 判断是否为MYSQL
             String driverName = connection.getMetaData().getDriverName().toUpperCase();
+            boolean isMySql = driverName.contains("MYSQL");
+            boolean isOracle = driverName.contains("ORACLE");
+            // MySQL使用catalog(dbName)来限定数据库范围，Oracle使用schema
+            String catalog = isMySql ? dbName : null;
+            String schema = isOracle ? dbName.toUpperCase() : null;
+
             // 获得列的信息
-            resultSet = connection.getMetaData().getColumns(null, null, tableName, null);
+            resultSet = connection.getMetaData().getColumns(catalog, schema, tableName, null);
             while (resultSet.next()) {
                 // 获得字段名称
                 String columnName = resultSet.getString("COLUMN_NAME");
@@ -113,7 +119,7 @@ public class DbHelper implements IDbHelper {
 
                 // 该列是否为空
                 Boolean nullable = Boolean.FALSE;
-                if (driverName.contains("ORACLE")) {
+                if (isOracle) {
                     nullable = resultSet.getBoolean("NULLABLE");
                 } else {
                     nullable = resultSet.getBoolean("IS_NULLABLE");
@@ -126,34 +132,41 @@ public class DbHelper implements IDbHelper {
                     columnDef=columnDef.replace("'","");
                     columnDef=columnDef.trim();
                 }
+                // 是否自增
+                boolean autoIncrement = false;
+                if (isMySql) {
+                    try {
+                        String isAuto = resultSet.getString("IS_AUTOINCREMENT");
+                        autoIncrement = "YES".equalsIgnoreCase(isAuto);
+                    } catch (SQLException ignored) {
+                    }
+                }
                 DbColumnInfo info = new DbColumnInfo(columnName, typeName, columnSize, remarks, nullable, false, false,
-                        columnDef, decimalDigits);
+                        columnDef, decimalDigits, autoIncrement);
                 columnInfos.add(info);
             }
 
             // 获得主键的信息
-            resultSet = connection.getMetaData().getPrimaryKeys(null, null, tableName);
+            resultSet = connection.getMetaData().getPrimaryKeys(catalog, schema, tableName);
             while (resultSet.next()) {
                 String primaryKey = resultSet.getString("COLUMN_NAME");
-                // 设置是否为主键
+                // 设置是否为主键（仅将匹配的列标记为true，不重置其他列）
                 for (DbColumnInfo dbColumnInfo : columnInfos) {
-                    if (primaryKey != null && primaryKey.equals(dbColumnInfo.getColumnName()))
+                    if (primaryKey != null && primaryKey.equals(dbColumnInfo.getColumnName())) {
                         dbColumnInfo.setParmaryKey(true);
-                    else
-                        dbColumnInfo.setParmaryKey(false);
+                    }
                 }
             }
 
             // 获得外键信息
-            resultSet = connection.getMetaData().getImportedKeys(null, null, tableName);
+            resultSet = connection.getMetaData().getImportedKeys(catalog, schema, tableName);
             while (resultSet.next()) {
                 String exportedKey = resultSet.getString("FKCOLUMN_NAME");
-                // 设置是否是外键
+                // 设置是否是外键（仅将匹配的列标记为true，不重置其他列）
                 for (DbColumnInfo dbColumnInfo : columnInfos) {
-                    if (exportedKey != null && exportedKey.equals(dbColumnInfo.getColumnName()))
+                    if (exportedKey != null && exportedKey.equals(dbColumnInfo.getColumnName())) {
                         dbColumnInfo.setImportedKey(true);
-                    else
-                        dbColumnInfo.setImportedKey(false);
+                    }
                 }
             }
 

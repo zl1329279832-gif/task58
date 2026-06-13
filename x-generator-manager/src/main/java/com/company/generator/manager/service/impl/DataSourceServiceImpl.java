@@ -42,6 +42,10 @@ public class DataSourceServiceImpl  extends CommonServiceImpl<DataSourceMapper,D
             if (dbType.equals("oracle")) {
                 props.put("remarksReporting", "true");
             }
+            if (dbType.equalsIgnoreCase("MySql")) {
+                props.put("useInformationSchema", "true");
+                props.put("remarks", "true");
+            }
             // 初始化JDBC驱动并让驱动加载到jvm中
             Class.forName(driverClassName);
             conn = DriverManager.getConnection(url, props);
