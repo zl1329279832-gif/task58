@@ -159,23 +159,34 @@ public class TableServiceImpl extends CommonServiceImpl<TableMapper, Table> impl
 	@Override
 	public void importDatabase(Table table) {
 		String tableName = table.getTableName();
-		String title=tableName;
+		String title = tableName;
+		// 处理 "tableName:备注" 格式（备注分隔符用冒号）
 		if (tableName.contains(":")){
-			String[] tableInfos=tableName.split(":");
-			tableName=tableInfos[0];
-			title=tableInfos[1];
+			String[] tableInfos = tableName.split(":", 2);
+			tableName = tableInfos[0];
+			title = tableInfos[1];
+		}
+		// 处理 "schema.tableName" 格式：保留完整表名用于查询，但用纯表名作为 className 基础
+		String pureTableName = tableName;
+		if (tableName.contains(".")) {
+			pureTableName = tableName.substring(tableName.lastIndexOf('.') + 1);
+		}
+		// 如果 title 与 tableName 相同（没有备注），则用纯表名
+		if (title.equals(tableName)) {
+			title = pureTableName;
 		}
 		table.setTitle(title);
 		table.setRemarks(title);
 		table.setTableName(tableName);
+		table.setClassName(StringUtils.underlineToCamel(pureTableName));
 		table.setSyncDatabase(Boolean.TRUE);
 		table.setTest(Boolean.FALSE);
 		// 保存主表
 		super.insert(table);
-		DataSource dataSource=dataSourceService.selectById(table.getSourceId());
+		DataSource dataSource = dataSourceService.selectById(table.getSourceId());
 		List<DbColumnInfo> dbColumnInfos = dataSourceService.getDbHelper(table.getSourceId()).getDbColumnInfo(tableName);
 		for (int j = 0; j < dbColumnInfos.size(); j++) {
-			Column column = new Column(dbColumnInfos.get(j),dataSource.getDbType());
+			Column column = new Column(dbColumnInfos.get(j), dataSource.getDbType());
 			column.setSort(j + 1);
 			// 保存字段列表
 			column.setTable(table);
@@ -239,7 +250,29 @@ public class TableServiceImpl extends CommonServiceImpl<TableMapper, Table> impl
 		dataMap.put("targetPackage",packageName);
 		//获取table
 		List<Column> columns=columnService.selectListByTableId(scheme.getTable().getId());
+		// 获取数据源类型，设置到每个 Column 上，确保模板中 getIsFloat/getIsString 等方法正常工作
+		String dbType = null;
+		if (scheme.getTable() != null && !StringUtils.isEmpty(scheme.getTable().getSourceId())) {
+			try {
+				DataSource ds = dataSourceService.selectById(scheme.getTable().getSourceId());
+				if (ds != null) {
+					dbType = ds.getDbType();
+				}
+			} catch (Exception e) {
+				// 忽略，dbType 保持 null
+			}
+		}
+		boolean hasPrimaryKey = false;
+		for (Column column : columns) {
+			column.setDbType(dbType);
+			if (Boolean.TRUE.equals(column.getParmaryKey())) {
+				hasPrimaryKey = true;
+			}
+		}
 		dataMap.put("columns",columns);
+		dataMap.put("hasPrimaryKey", hasPrimaryKey);
+		// 表名（原始表名，供模板中引用）
+		dataMap.put("tableName", scheme.getTableName());
 		//引入其他模型的一些公用参数
 		for (Template templateItem:allTemplates) {
 			//包名字中加入模板
@@ -250,20 +283,6 @@ public class TableServiceImpl extends CommonServiceImpl<TableMapper, Table> impl
 		//设置生成的时间
 		String time= DateUtils.formatDateTime(new Date());
 		dataMap.put("time",time);
-		//获得实体导入
-	    /*List<String> importTypes = new ArrayList<String>();
-		List<AttributeInfo> attributeInfos = generatorInfo.getAttributeInfos();
-		Map<String, Boolean> tempImportMap = new HashMap<String, Boolean>();
-		if (attributeInfos!=null) {
-			for (AttributeInfo attributeInfo : attributeInfos) {
-				String importType = attributeInfo.getImportType();
-				if (!StringUtils.isEmpty(importType)&&!tempImportMap.containsKey(importType)) {
-					importTypes.add(importType);
-					tempImportMap.put(importType, true);
-				}
-			}
-			generatorInfo.setImportTypes(importTypes);
-		}*/
 		return dataMap;
 	}
 
@@ -273,10 +292,19 @@ public class TableServiceImpl extends CommonServiceImpl<TableMapper, Table> impl
 		}
 		if (!StringUtils.isEmpty(moduleName)){
 			packageName =  packageName.replace("[moduleName]",moduleName);
-		}else if(packageName.startsWith("[moduleName]")){
-			packageName =  packageName.replace("[moduleName].", "");
 		}else{
-			packageName =  packageName.replace(".[moduleName]", "");
+			// moduleName 为空时，移除 [moduleName] 占位符及其相邻的点号
+			packageName = packageName.replace("[moduleName].", "");
+			packageName = packageName.replace(".[moduleName]", "");
+			packageName = packageName.replace("[moduleName]", "");
+		}
+		// 清理可能残留的连续点号或首尾点号
+		packageName = packageName.replaceAll("\\.{2,}", ".");
+		if (packageName.startsWith(".")) {
+			packageName = packageName.substring(1);
+		}
+		if (packageName.endsWith(".")) {
+			packageName = packageName.substring(0, packageName.length() - 1);
 		}
 		return packageName;
 	}
@@ -288,19 +316,11 @@ public class TableServiceImpl extends CommonServiceImpl<TableMapper, Table> impl
 		String packageName = template.getTargetPackage();
 		//包名字中加入模板
 		packageName = parsePackageName(packageName,scheme.getModuleName());
-		if (template.getEnablePackage().equals("1")){
-			if (!"".endsWith(packageName)) {
-//				outPath += File.separator + packageName;
+		if ("1".equals(template.getEnablePackage())){
+			if (!StringUtils.isEmpty(packageName)) {
 				packageNamePath = packageName;
 			}
 		}
-		/*// 当前模块名
-		String moduleName = scheme.getModuleName();
-		if (!"".endsWith(moduleName)) {
-			outPath += File.separator + moduleName;
-		}*/
-		//
-//		outPath = outPath.replace(".", File.separator).trim();
 		packageNamePath = packageNamePath.replace(".", File.separator).trim();
 		outPath += File.separator + packageNamePath;
 		File outPathFile = new File(outPath);
@@ -309,7 +329,7 @@ public class TableServiceImpl extends CommonServiceImpl<TableMapper, Table> impl
 		}
 		//对文件进行格式化
 		String fileName = template.getNameFormat().replace("[entityName]", scheme.getEntityName());
-		if (StringUtils.isEmpty(template.getNameUnderline())&&template.getNameUnderline().equals("1")) {
+		if (!StringUtils.isEmpty(template.getNameUnderline()) && "1".equals(template.getNameUnderline())) {
 			fileName = StringUtils.camelToUnderline(fileName);
 		}
 
@@ -578,8 +598,8 @@ public class TableServiceImpl extends CommonServiceImpl<TableMapper, Table> impl
 		String packageNamePath = "";
 		String packageName = template.getTargetPackage();
 		packageName = parsePackageName(packageName, scheme.getModuleName());
-		if (template.getEnablePackage().equals("1")) {
-			if (!"".endsWith(packageName)) {
+		if ("1".equals(template.getEnablePackage())) {
+			if (!StringUtils.isEmpty(packageName)) {
 				packageNamePath = packageName;
 			}
 		}
@@ -590,7 +610,7 @@ public class TableServiceImpl extends CommonServiceImpl<TableMapper, Table> impl
 			outPathFile.mkdirs();
 		}
 		String fileName = template.getNameFormat().replace("[entityName]", scheme.getEntityName());
-		if (!StringUtils.isEmpty(template.getNameUnderline()) && template.getNameUnderline().equals("1")) {
+		if (!StringUtils.isEmpty(template.getNameUnderline()) && "1".equals(template.getNameUnderline())) {
 			fileName = StringUtils.camelToUnderline(fileName);
 		}
 		return new File(outPath + File.separator + fileName);

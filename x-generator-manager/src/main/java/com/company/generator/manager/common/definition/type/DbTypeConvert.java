@@ -18,11 +18,12 @@ public class DbTypeConvert implements ITypeConvert {
 	public static Map<String, DbTypeConvert> dbTypeConvertMap = new HashMap<String, DbTypeConvert>();
 
 	public static ITypeConvert getTypeConvert(String type,String dbType) {
-		if (dbTypeConvertMap.containsKey(type)) {
-			return dbTypeConvertMap.get(type);
+		String cacheKey = type + "_" + dbType;
+		if (dbTypeConvertMap.containsKey(cacheKey)) {
+			return dbTypeConvertMap.get(cacheKey);
 		} else {
 			DbTypeConvert typeConvert = new DbTypeConvert(type,dbType);
-			dbTypeConvertMap.put(type, typeConvert);
+			dbTypeConvertMap.put(cacheKey, typeConvert);
 			return typeConvert;
 		}
 	}

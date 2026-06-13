@@ -4,6 +4,7 @@ import com.company.generator.manager.common.data.DbColumnInfo;
 import com.company.generator.manager.common.definition.DefinitionUtils;
 import com.company.generator.manager.common.definition.data.Type;
 import com.company.generator.manager.common.definition.type.DbTypeConvert;
+import com.company.generator.manager.common.definition.type.ITypeConvert;
 import com.baomidou.mybatisplus.annotations.TableField;
 import com.baomidou.mybatisplus.annotations.TableId;
 import com.baomidou.mybatisplus.annotations.TableName;
@@ -105,6 +106,8 @@ public class Column extends AbstractEntity<String> implements java.io.Serializab
 	private String foreignTable;
 	@TableField("remarks")
 	private String remarks;
+	@TableField("auto_increment")
+	private Boolean autoIncrement = false;
 	@TableField(exist = false)
 	private Boolean isFloat = Boolean.FALSE;
 	@TableField(exist = false)
@@ -116,7 +119,7 @@ public class Column extends AbstractEntity<String> implements java.io.Serializab
 	@TableField(exist = false)
 	private Boolean isBaseType = Boolean.FALSE;
 	@TableField(exist = false)
-	private String[] baseTypes = { "String", "Double", "Text", "Date", "Blob", "Short", "Integer", "Boolean" };
+	private String[] baseTypes = { "String", "Double", "BigDecimal", "Text", "Date", "Blob", "Short", "Integer", "Boolean", "Long" };
 	@TableField(exist = false)
 	private String simpleJavaType;
 	@TableField(exist = false)
@@ -129,7 +132,9 @@ public class Column extends AbstractEntity<String> implements java.io.Serializab
 	public Column(DbColumnInfo dbColumnInfo, String dbType) {
 		this.columnName = dbColumnInfo.getColumnName().toLowerCase();
 		this.remarks = dbColumnInfo.getRemarks();
-		this.typeName = dbColumnInfo.getTypeName().toLowerCase();
+		// 统一使用大写类型名，与类型映射表保持一致
+		String normalizedTypeName = dbColumnInfo.getTypeName().toUpperCase();
+		this.typeName = normalizedTypeName;
 		if (StringUtils.isEmpty(dbColumnInfo.getColumnSize())) {
 			this.columnSize = "1";
 		} else {
@@ -141,7 +146,21 @@ public class Column extends AbstractEntity<String> implements java.io.Serializab
 		this.columnDef = dbColumnInfo.getColumnDef();
 		this.decimalDigits = StringUtils.isEmpty(dbColumnInfo.getDecimalDigits()) ? "0"
 				: dbColumnInfo.getDecimalDigits();
-		Type type = DbTypeConvert.getTypeConvert(DbTypeConvert.TYPE_DB_TO_JAVA,dbType).getType(dbColumnInfo.getTypeName());
+		this.autoIncrement = dbColumnInfo.isAutoIncrement() != null ? dbColumnInfo.isAutoIncrement() : false;
+
+		// 特殊处理：TINYINT(1) 或 BIT(1) 映射为 Boolean（常用于布尔标志位）
+		Type type = null;
+		if (("TINYINT".equals(normalizedTypeName) || "BIT".equals(normalizedTypeName))
+				&& "1".equals(this.columnSize)) {
+			type = new Type();
+			type.setJavaType("Boolean");
+			type.setDbType(normalizedTypeName);
+		} else {
+			// 使用大写类型名进行查找，确保匹配
+			ITypeConvert typeConvert = DbTypeConvert.getTypeConvert(DbTypeConvert.TYPE_DB_TO_JAVA, dbType);
+			type = typeConvert.getType(normalizedTypeName);
+		}
+
 		if (type != null) {
 			this.javaType = type.getJavaType();
 		} else {
@@ -153,7 +172,6 @@ public class Column extends AbstractEntity<String> implements java.io.Serializab
 		this.queryType = "eq";
 		this.formable = Boolean.TRUE;
 		this.formType = "input";
-		this.typeName = dbColumnInfo.getTypeName().toUpperCase();
 	}
 
 	public String getId() {
@@ -457,5 +475,13 @@ public class Column extends AbstractEntity<String> implements java.io.Serializab
 
 	public Boolean getBaseType() {
 		return Boolean.FALSE;
+	}
+
+	public Boolean getAutoIncrement() {
+		return autoIncrement;
+	}
+
+	public void setAutoIncrement(Boolean autoIncrement) {
+		this.autoIncrement = autoIncrement;
 	}
 }

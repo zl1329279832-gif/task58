@@ -28,7 +28,7 @@ public class DbTableInfo implements Serializable {
 	}
 
 	public String getLabel() {
-		if (!StringUtils.isEmpty(remarks)) {
+		if (!StringUtils.isEmpty(remarks) && !remarks.equals(tableName)) {
 			return this.tableName + ":" + remarks;
 		}else{
 			return this.tableName;

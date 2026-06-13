@@ -13,11 +13,11 @@
 	<db>
 	    <!-- 搜索类型 -->
 	    <all-types>
-	       VARCHAR,TINYINT,SMALLINT,MEDIUMINT,INT,INTEGER,BIGINT,FLOAT,DOUBLE,DECIMAL,DATE,TIME,YEAR,DATETIME,TIMESTAMP,BINARY,VARBINARY,CHAR,TINYBLOB,TINYTEXT,BLOB,TEXT,MEDIUMBLOB,MEDIUMTEXT,LONGBLOB,LONGTEXT
+	       VARCHAR,TINYINT,SMALLINT,MEDIUMINT,INT,INTEGER,BIGINT,FLOAT,DOUBLE,DECIMAL,DATE,TIME,YEAR,DATETIME,TIMESTAMP,BINARY,VARBINARY,CHAR,TINYBLOB,TINYTEXT,BLOB,TEXT,MEDIUMBLOB,MEDIUMTEXT,LONGBLOB,LONGTEXT,BIT,ENUM,SET,JSON
 	    </all-types>
 	    <!-- 字符类型 -->
 	    <char-types>
-	       CHAR,VARCHAR,TINYBLOB,TINYTEXT,BLOB,TEXT,MEDIUMBLOB,MEDIUMTEXT,LONGBLOB,LONGTEXT
+	       CHAR,VARCHAR,TINYBLOB,TINYTEXT,BLOB,TEXT,MEDIUMBLOB,MEDIUMTEXT,LONGBLOB,LONGTEXT,ENUM,SET,JSON
 	    </char-types>
 	    <!--需要设置小组点的类型-->
 	    <float-types>
@@ -53,16 +53,20 @@
 				<!-- SQL片段 -->
 				<content>
 				 <![CDATA[
-				   CREATE TABLE `${table.tableName}` (  
+				   CREATE TABLE `${table.tableName}` (
+					   <#if hasPrimaryKey>
 					   `id` varchar(64) NOT NULL COMMENT '主键',
+					   <#else>
+					   `id` varchar(64) NOT NULL COMMENT '主键',
+					   </#if>
 					   <#if table.columns?exists>
 					   <#list table.columns as attr>
 					   <#if attr.columnName != "id">
-					   `${attr.columnName}` <#if attr.isAlone> ${attr.typeName}<#else> ${attr.typeName}(${attr.columnSize}<#if attr.isFloat>,${attr.decimalDigits}</#if>)</#if><#if !attr.nullable> NOT NULL</#if><#if !attr.isBlob&&attr.columnDef?exists&&attr.columnDef!=''> DEFAULT <#if attr.isString>'${attr.columnDef}'<#else>${attr.columnDef}</#if></#if> <#if attr.remarks?exists&&attr.remarks!=''>COMMENT  '${attr.remarks}'</#if>,
+					   `${attr.columnName}` <#if attr.isAlone> ${attr.typeName}<#else> ${attr.typeName}(${attr.columnSize}<#if attr.isFloat>,${attr.decimalDigits}</#if>)</#if><#if !attr.nullable> NOT NULL</#if><#if attr.autoIncrement?? && attr.autoIncrement> AUTO_INCREMENT</#if><#if !attr.isBlob&&attr.columnDef?exists&&attr.columnDef!=''> DEFAULT <#if attr.isString>'${attr.columnDef}'<#else>${attr.columnDef}</#if></#if> <#if attr.remarks?exists&&attr.remarks!=''>COMMENT  '${attr.remarks}'</#if>,
 					   </#if>
 					   </#list>
 					   </#if>
-					  PRIMARY KEY (`id`)  
+					  PRIMARY KEY (`id`)
 					) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='${table.remarks!}';
 				 ]]>
 			    </content>
@@ -92,23 +96,77 @@
 		</type>
 		<type>
 			<java-type>Integer</java-type>
+			<db-type>INTEGER</db-type>
+		</type>
+		<type>
+			<java-type>Integer</java-type>
+			<db-type>MEDIUMINT</db-type>
+		</type>
+		<type>
+			<java-type>Integer</java-type>
 			<db-type>INT UNSIGNED</db-type>
+		</type>
+		<type>
+			<java-type>Integer</java-type>
+			<db-type>INTEGER UNSIGNED</db-type>
+		</type>
+		<type>
+			<java-type>Integer</java-type>
+			<db-type>MEDIUMINT UNSIGNED</db-type>
 		</type>
 		<type>
 			<java-type>Long</java-type>
 			<db-type>BIGINT UNSIGNED</db-type>
 		</type>
 		<type>
-			<java-type>Long</java-type>
+			<java-type>Integer</java-type>
 			<db-type>TINYINT UNSIGNED</db-type>
 		</type>
 		<type>
-			<java-type>Double</java-type>
+			<java-type>Integer</java-type>
+			<db-type>SMALLINT UNSIGNED</db-type>
+		</type>
+		<type>
+			<java-type>BigDecimal</java-type>
+			<full-type>java.math.BigDecimal</full-type>
 			<db-type>DECIMAL</db-type>
+		</type>
+		<type>
+			<java-type>BigDecimal</java-type>
+			<full-type>java.math.BigDecimal</full-type>
+			<db-type>DECIMAL UNSIGNED</db-type>
+		</type>
+		<type>
+			<java-type>Float</java-type>
+			<db-type>FLOAT</db-type>
+		</type>
+		<type>
+			<java-type>Float</java-type>
+			<db-type>FLOAT UNSIGNED</db-type>
+		</type>
+		<type>
+			<java-type>Double</java-type>
+			<db-type>DOUBLE</db-type>
+		</type>
+		<type>
+			<java-type>Double</java-type>
+			<db-type>DOUBLE UNSIGNED</db-type>
 		</type>
 		<type>
 			<java-type>String</java-type>
 			<db-type>TEXT</db-type>
+		</type>
+		<type>
+			<java-type>String</java-type>
+			<db-type>TINYTEXT</db-type>
+		</type>
+		<type>
+			<java-type>String</java-type>
+			<db-type>MEDIUMTEXT</db-type>
+		</type>
+		<type>
+			<java-type>String</java-type>
+			<db-type>LONGTEXT</db-type>
 		</type>
 		<type>
 			<java-type>Date</java-type>
@@ -116,24 +174,65 @@
 			<db-type>TIMESTAMP</db-type>
 		</type>
 		<type>
-			<java-type>Short</java-type>
-			<db-type>TINYINT</db-type>
+			<java-type>Date</java-type>
+			<full-type>java.util.Date</full-type>
+			<db-type>DATE</db-type>
 		</type>
 		<type>
-			<java-type>Double</java-type>
-			<db-type>DECIMAL UNSIGNED</db-type>
+			<java-type>Short</java-type>
+			<db-type>TINYINT</db-type>
 		</type>
 		<type>
 			<java-type>Short</java-type>
 			<db-type>SMALLINT</db-type>
 		</type>
 		<type>
-			<java-type>Short</java-type>
+			<java-type>Boolean</java-type>
 			<db-type>BIT</db-type>
 		</type>
 		<type>
 			<java-type>String</java-type>
 			<db-type>CHAR</db-type>
+		</type>
+		<type>
+			<java-type>String</java-type>
+			<db-type>ENUM</db-type>
+		</type>
+		<type>
+			<java-type>String</java-type>
+			<db-type>SET</db-type>
+		</type>
+		<type>
+			<java-type>String</java-type>
+			<db-type>JSON</db-type>
+		</type>
+		<type>
+			<java-type>Integer</java-type>
+			<db-type>YEAR</db-type>
+		</type>
+		<type>
+			<java-type>byte[]</java-type>
+			<db-type>BINARY</db-type>
+		</type>
+		<type>
+			<java-type>byte[]</java-type>
+			<db-type>VARBINARY</db-type>
+		</type>
+		<type>
+			<java-type>byte[]</java-type>
+			<db-type>TINYBLOB</db-type>
+		</type>
+		<type>
+			<java-type>byte[]</java-type>
+			<db-type>BLOB</db-type>
+		</type>
+		<type>
+			<java-type>byte[]</java-type>
+			<db-type>MEDIUMBLOB</db-type>
+		</type>
+		<type>
+			<java-type>byte[]</java-type>
+			<db-type>LONGBLOB</db-type>
 		</type>
 	</dbtojava-types>
 	<!-- java类型与class全路径的对应 -->
@@ -141,6 +240,10 @@
 		 <type>
 			<java-type>Date</java-type>
 			<full-type>java.util.Date</full-type>
+		</type>
+		<type>
+			<java-type>BigDecimal</java-type>
+			<full-type>java.math.BigDecimal</full-type>
 		</type>
 	</typetofull-types>
 </definition>

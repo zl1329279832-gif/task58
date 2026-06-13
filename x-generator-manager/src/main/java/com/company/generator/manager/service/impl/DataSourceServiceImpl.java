@@ -39,8 +39,25 @@ public class DataSourceServiceImpl  extends CommonServiceImpl<DataSourceMapper,D
             if (password != null) {
                 props.put("password", password);
             }
-            if (dbType.equals("oracle")) {
+            if (dbType != null && (dbType.equalsIgnoreCase("oracle") || dbType.equalsIgnoreCase("Oracle"))) {
                 props.put("remarksReporting", "true");
+            }
+            // MySQL 需要启用 information_schema 读取，确保表注释和字段注释能被正确获取
+            if (dbType != null && dbType.toLowerCase().contains("mysql")) {
+                props.put("remarksReporting", "true");
+                props.put("useInformationSchema", "true");
+                // MySQL 8 驱动兼容：useSSL=false 避免 SSL 警告
+                if (!url.contains("useSSL")) {
+                    url += (url.contains("?") ? "&" : "?") + "useSSL=false";
+                }
+                // MySQL 8 驱动兼容：allowPublicKeyRetrieval
+                if (!url.contains("allowPublicKeyRetrieval")) {
+                    url += "&allowPublicKeyRetrieval=true";
+                }
+                // MySQL 8 驱动兼容：nullDatabaseMeansCurrent=true 让 null catalog 表示当前数据库
+                if (!url.contains("nullDatabaseMeansCurrent")) {
+                    url += "&nullDatabaseMeansCurrent=true";
+                }
             }
             // 初始化JDBC驱动并让驱动加载到jvm中
             Class.forName(driverClassName);

@@ -23,6 +23,8 @@ public class DbColumnInfo implements Serializable {
 	private String columnDef = "";
 	// 小数部分的位数
 	private String decimalDigits = "";
+	// 是否自增
+	private Boolean autoIncrement = false;
 
 	public DbColumnInfo() {
 
@@ -30,6 +32,11 @@ public class DbColumnInfo implements Serializable {
 
 	public DbColumnInfo(String columnName, String typeName, String columnSize, String remarks, boolean nullable,
 			boolean parmaryKey, boolean importedKey, String columnDef, String decimalDigits) {
+		this(columnName, typeName, columnSize, remarks, nullable, parmaryKey, importedKey, columnDef, decimalDigits, false);
+	}
+
+	public DbColumnInfo(String columnName, String typeName, String columnSize, String remarks, boolean nullable,
+			boolean parmaryKey, boolean importedKey, String columnDef, String decimalDigits, boolean autoIncrement) {
 		this.columnName = columnName;
 		this.typeName = typeName;
 		this.columnSize = columnSize;
@@ -39,7 +46,7 @@ public class DbColumnInfo implements Serializable {
 		this.importedKey = importedKey;
 		this.columnDef = columnDef;
 		this.decimalDigits = decimalDigits;
-
+		this.autoIncrement = autoIncrement;
 	}
 
 	public String getColumnName() {
@@ -115,6 +122,14 @@ public class DbColumnInfo implements Serializable {
 
 	public void setDecimalDigits(String decimalDigits) {
 		this.decimalDigits = decimalDigits;
+	}
+
+	public Boolean isAutoIncrement() {
+		return autoIncrement;
+	}
+
+	public void setAutoIncrement(Boolean autoIncrement) {
+		this.autoIncrement = autoIncrement;
 	}
 
 }
